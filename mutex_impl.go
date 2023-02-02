@@ -23,7 +23,7 @@ func (mu *MuContest) Lock() {
 
 func (mu *MuContest) LockChannel() <-chan struct{} {
 
-	ch := make(chan struct{}, 1)
+  ch := make(chan struct{}, 1)
 
 	if atomic.AddInt32(&mu.nlocks, 1) == 1 {
 		ch <- mu.sig
@@ -36,13 +36,10 @@ func (mu *MuContest) LockChannel() <-chan struct{} {
 
 	return mu.ch
 
+
 }
 
 func (mu *MuContest) Unlock() {
-
-	// if mu.nlocks == 0 {
-	// 	return
-	// }
 
 	if atomic.AddInt32(&mu.nlocks, -1) == 0 {
 		return
