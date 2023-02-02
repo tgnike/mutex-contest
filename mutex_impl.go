@@ -40,10 +40,6 @@ func (mu *MuContest) LockChannel() <-chan struct{} {
 
 func (mu *MuContest) Unlock() {
 
-	// if mu.nlocks == 0 {
-	// 	return
-	// }
-
 	if atomic.AddInt32(&mu.nlocks, -1) == 0 {
 		return
 	}
