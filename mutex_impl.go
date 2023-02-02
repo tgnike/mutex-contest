@@ -4,33 +4,34 @@ import (
 	"sync/atomic"
 )
 
+const lock int32 = 1
+
 type MuContest struct {
 	nlocks int32
 	ch     chan struct{}
 	sig    struct{}
 }
 
+// Lock Блокирует мьютекс
+// Если блокировка уже установлена - блокирует горутину до разблокировки
 func (mu *MuContest) Lock() {
 
-	// Увеличение количества блокировок
+	// Увеличение счетчика блокировок
 	// если получилось больше 1 - есть еще блокировки
 	// ожидаем сингнал из канала (ch)
-	if atomic.AddInt32(&mu.nlocks, 1) == 1 {
+	if atomic.AddInt32(&mu.nlocks, lock) == 1 {
 		return
 	}
 
-	// Ожидание сигнала из Unlock()
+	// Ожидание сигнала из канала
 	<-mu.ch
 
 }
 
+// LockChannel блокировка канала
 func (mu *MuContest) LockChannel() <-chan struct{} {
 
-	// if atomic.LoadInt32(&mu.nlocks) == 0 {
-	// 	mu.ch <- mu.sig
-	// }
-
-	if atomic.AddInt32(&mu.nlocks, 1) == 1 {
+	if atomic.AddInt32(&mu.nlocks, lock) == 1 {
 		mu.ch <- mu.sig
 	}
 
@@ -38,16 +39,18 @@ func (mu *MuContest) LockChannel() <-chan struct{} {
 
 }
 
+// Unlock разблокирует мьютекс
 func (mu *MuContest) Unlock() {
 
 	// Уменьшение счетчика блокировок
 	// если есть еще блокировки отправляем сигнал в канал (ch).
-	if atomic.AddInt32(&mu.nlocks, -1) == 0 {
+	if atomic.AddInt32(&mu.nlocks, -lock) == 0 {
 		return
 	}
 
+	// Паника: разблокировка без блокировки
 	if atomic.LoadInt32(&mu.nlocks) < 0 {
-		panic("unlocked")
+		panic("attempt to unlock when there are no locks")
 	}
 
 	// Сигнал о разблокировке
