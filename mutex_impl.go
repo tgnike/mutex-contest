@@ -23,16 +23,16 @@ func (mu *MuContest) Lock() {
 
 func (mu *MuContest) LockChannel() <-chan struct{} {
 
-	ch := make(chan struct{}, 1)
+	//ch := make(chan struct{}, 1)
 
-	if atomic.AddInt32(&mu.nlocks, 1) == 1 {
-		ch <- mu.sig
+	if atomic.LoadInt32(&mu.nlocks) == 0 {
+		mu.ch <- mu.sig
 	}
 
 	// Если ничего не заблокировано, отправляем сигнал в канал.
-	if mu.nlocks == 0 {
-		mu.ch <- mu.sig
-	}
+	// if mu.nlocks == 0 {
+	// 	mu.ch <- mu.sig
+	// }
 
 	return mu.ch
 
