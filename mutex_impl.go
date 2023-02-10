@@ -19,7 +19,7 @@ func (mu *MuContest) Lock() {
 	// Увеличение счетчика блокировок
 	// если получилось больше 1 - есть еще блокировки
 	// ожидаем сингнал из канала (ch)
-	if atomic.AddInt32(&mu.nlocks, lock) == 1 {
+	if atomic.AddInt32(&mu.nlocks, lock) == lock {
 		return
 	}
 
@@ -31,7 +31,7 @@ func (mu *MuContest) Lock() {
 // LockChannel блокировка канала
 func (mu *MuContest) LockChannel() <-chan struct{} {
 
-	if atomic.AddInt32(&mu.nlocks, lock) == 1 {
+	if atomic.AddInt32(&mu.nlocks, lock) == lock {
 		mu.ch <- mu.sig
 	}
 
@@ -41,15 +41,18 @@ func (mu *MuContest) LockChannel() <-chan struct{} {
 
 // Unlock разблокирует мьютекс
 func (mu *MuContest) Unlock() {
+	
+	nlocksValue:=atomic.LoadInt32(&mu.nlocks)
 
 	// Уменьшение счетчика блокировок
 	// если есть еще блокировки отправляем сигнал в канал (ch).
-	if atomic.AddInt32(&mu.nlocks, -lock) == 0 {
-		return
+	if (nlocksValue - lock) == 0 {
+	     atomic.AddInt32(&mu.nlocks, -lock)
+	     return
 	}
 
 	// Паника: разблокировка без блокировки
-	if atomic.LoadInt32(&mu.nlocks) < 0 {
+	if nlocksValue == 0 {
 		panic("attempt to unlock when there are no locks")
 	}
 
