@@ -51,8 +51,7 @@ func (mu *MuContest) Unlock() {
 
 	// Уменьшение счетчика блокировок
 	// если есть еще блокировки отправляем сигнал в канал (ch).
-	if (nlocksValue - lock) == 0 {
-	     atomic.AddInt32(&mu.nlocks, -lock)
+	if  atomic.AddInt32(&mu.nlocks, -lock) == 0 {
 	     return
 	}
 
