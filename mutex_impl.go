@@ -43,17 +43,17 @@ func (mu *MuContest) LockChannel() <-chan struct{} {
 func (mu *MuContest) Unlock() {
 	
 	nlocksValue:=atomic.LoadInt32(&mu.nlocks)
+	
+	// Паника: разблокировка без блокировки
+	if nlocksValue == 0 {
+		panic("attempt to unlock when there are no locks")
+	}
 
 	// Уменьшение счетчика блокировок
 	// если есть еще блокировки отправляем сигнал в канал (ch).
 	if (nlocksValue - lock) == 0 {
 	     atomic.AddInt32(&mu.nlocks, -lock)
 	     return
-	}
-
-	// Паника: разблокировка без блокировки
-	if nlocksValue == 0 {
-		panic("attempt to unlock when there are no locks")
 	}
 
 	// Сигнал о разблокировке
